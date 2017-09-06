@@ -5,6 +5,7 @@ const io = require('socket.io')()
 const express = require('express')
 const bodyParser = require('body-parser')
 const Ssdp = require('node-ssdp')
+const ip = require('ip')
 
 const app = express()
 
@@ -16,12 +17,12 @@ app.use(bodyParser.json())
 app.use('/api', require('./plugin')(io))
 
 const server = app.listen(argv.port || 31416, function () {
-  const addr = server.address().address
+  const addr = ip.address()
   const port = server.address().port
   console.log(`Bigfoot virtual bulb listening at http://${addr}:${port}`)
 
   ssdpServer = new Ssdp.Server({
-    location: `${addr}:${port}`,
+    location: `http://${addr}:${port}/api`,
     sourcePort: 1900,
   })
   ssdpServer.addUSN('bigfoot:bulb')

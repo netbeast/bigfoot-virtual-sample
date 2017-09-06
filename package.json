@@ -6,6 +6,7 @@
   "dependencies": {
     "colorsys": "^1.0.10",
     "express": "^4.12.3",
+    "ip": "^1.1.5",
     "minimist": "^1.1.0",
     "netbeast": "^1.0.6",
     "node-ssdp": "^3.2.1",

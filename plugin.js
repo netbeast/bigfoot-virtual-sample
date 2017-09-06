@@ -1,15 +1,11 @@
-var express = require('express')
-var request = require('superagent')
-var colorsys = require('colorsys')
+const express = require('express')
+const request = require('superagent')
+const colorsys = require('colorsys')
+const router = express.Router()
 
-var router = express.Router()
-var bulbParams // aux nasty way to transmit changes
-
-var state = {
-  power: 'power',
-  brightness: 'brightness',
-  saturation: 'saturation',
-  hue: 'hue'
+const bulbState = {
+  power: 0,
+  color: '#ffffff'
 }
 
 module.exports = function (io) {
@@ -33,101 +29,23 @@ module.exports = function (io) {
 
   router.post('/', function (req, res) {
     io.emit('get')
-    if (!Object.keys(req.body).length) {
-      return res.status(400).send('Incorrect set format')
-    }
-    
-    console.log('Plugin translates uniform req.body to bulb params...')
-    
-    var response = {}
-    if ('power' in req.body) response.power = req.body.power
-
-    if ('color' in req.body) {
-      if (req.body.hue) delete req.body.hue
-      if (req.body.saturation) delete req.body.saturation
-      if (req.body.brightness) delete req.body.brightness
-      if (typeof (req.body.color) === 'string') {
-        var hsl = colorsys.hex2Hsl(req.body.color)
-        response.hue = hsl.h
-        response.saturation = hsl.s
-        response.brightness = hsl.l
-        response.color = req.body.color
-      } else if (typeof (req.body.color) === 'object') {
-        if (req.body.color.r || req.body.color.g || req.body.color.b) {
-          var hsl = colorsys.rgb2Hsl(req.body.color.r, req.body.color.g, req.body.color.b)
-          response.hue = hsl.h
-          response.saturation = hsl.s
-          response.brightness = hsl.l
-          response.color = colorsys.rgb2Hex(req.body.color.r, req.body.color.g, req.body.color.b)
-        } else {
-          return res.status(400).send('Incorrect color format')
-        }
-      } else return res.status(400).send('Incorrect color format')
-    } else {
-      if (bulbParams) {
-        var hsl = colorsys.hex2Hsl(bulbParams.color)
-        response.hue = req.body.hue ? req.body.hue : hsl.h
-        response.saturation = req.body.saturation ? req.body.saturation : hsl.s
-        response.brightness = req.body.brightness ? req.body.brightness : hsl.l
-        response.color = colorsys.hsl2Hex(response.hue, response.saturation, response.brightness)
-      }
-    }
-    if (!response) return res.status(400).send('Incorrect set format')
-
-    io.emit('set', {
-      power: ('power' in response) ? ((response.power && response.power !== 'off') ? 'on' : 'off') : bulbParams.power,
-      color: ('color' in response) ? response.color : bulbParams.color
-    })
-    console.log('setting...')
-    console.log({
-      power: ('power' in response) ? ((response.power) ? 'on' : 'off') : bulbParams.power,
-      color: ('color' in response) ? response.color : bulbParams.color
-    })
-    bulbParams = null
-    res.send(response)
+    console.log('POST Request', req.body)
+    io.emit('set', req.body.state)
+    res.send('OK')
   })
 
   router.get('/', function (req, res) {
     io.emit('get')
     setTimeout(function () {
       if (bulbParams) {
-        var hsl = colorsys.hex2Hsl(bulbParams.color)
-        delete bulbParams.color
-        bulbParams.hue = hsl.h
-        bulbParams.saturation = hsl.s
-        bulbParams.brightness = hsl.l
-
-        if (!Object.keys(req.query).length) return res.json(bulbParams)
-
-        var response = {}
-
-        Object.keys(req.query).forEach(function (key) {
-          if (key === 'color') {
-            response['color'] = { hex: colorsys.hsl2Hex(hsl.h, hsl.s, hsl.l),
-              rgb: colorsys.hsl2Rgb(hsl.h, hsl.s, hsl.l)
-            }
-          }
-          if (bulbvalues[key]) response[key] = bulbParams[key]
-        })
-        bulbParams = null
-
-        if (Object.keys(response).length) return res.json(response)
-        return res.status(202).send('Values not available on this philips-hue bulb')
+        console.log('GET Response', bulbState)
+        return res.json(bulbState)
       } else {
         res.status(404).json('Device not found')
       }
     }, 3000)
   })
 
-  router.get('/on', function (req, res) {
-    io.emit('on')
-    res.status(204).end()
-  })
-
-  router.get('/off', function (req, res) {
-    io.emit('off')
-    res.status(204).end()
-  })
 
   return router
 }

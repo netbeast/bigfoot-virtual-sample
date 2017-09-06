@@ -672,7 +672,7 @@ Request.prototype.callback = function(err, res){
   // Avoid the error which is emitted from 'socket hang up' to cause the fn undefined error on JS runtime.
   var fn = this._callback || noop;
   this.clearTimeout();
-  if (this.called) return console.warn('double callback!');
+  if (this.called) return console.warn('superagent: double callback bug. Upgrade to v3.2+ to fix this');
   this.called = true;
 
   if (err) {
