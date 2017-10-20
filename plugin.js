@@ -4,7 +4,7 @@ const colorsys = require('colorsys')
 const router = express.Router()
 
 const bulbState = {
-  power: 0,
+  power: false,
   color: '#ffffff'
 }
 
@@ -29,20 +29,18 @@ module.exports = function (io) {
 
   router.post('/', function (req, res) {
     io.emit('get')
-    console.log('POST Request', req.body)
-    io.emit('set', req.body.state)
-    res.send('OK')
+    console.log('[POST REQUEST]', req.body)
+    const params = JSON.parse(req.body.body)
+    console.log('Sending to bulb...', params.state)
+    io.emit('set', params.state)
+    res.send(params.state)
   })
 
   router.get('/', function (req, res) {
     io.emit('get')
     setTimeout(function () {
-      if (bulbParams) {
-        console.log('GET Response', bulbState)
-        return res.json(bulbState)
-      } else {
-        res.status(404).json('Device not found')
-      }
+      console.log('[GET REQUEST] Current state:', bulbState)
+      return res.json(bulbState)
     }, 3000)
   })
 
